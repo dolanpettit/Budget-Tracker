@@ -14,27 +14,61 @@ const FILES_TO_CACHE = [
 // Service Worker Install
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME),
-    caches.then((cache) => cache.addAll(FILES_TO_CACHE)),
-    caches.then(self.skipWaiting())
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(FILES_TO_CACHE))
+      .then(() => self.skipWaiting())
   );
 });
 
 // Service Worker Activate
 self.addEventListener("activate", (event) => {
+  const currentCaches = [CACHE_NAME, DATA_CACHE_NAME];
+
   event.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(
-        keyList.map((key) => {
-          if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return cacheNames.filter((name) => !currentCaches.includes(name));
+      })
+      .then((cachesToDelete) => {
+        return Promise.all(cachesToDelete.map((name) => caches.delete(name)));
+      })
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Service Worker Fetch
+self.addEventListener("fetch", (event) => {
+  if (
+    event.request.method !== "GET" ||
+    !event.request.url.startsWith(self.location.origin)
+  ) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  if (event.request.url.includes("/api/")) {
+    event.respondWith(
+      caches.open(RUNTIME_CACHE).then((cache) => {
+        return fetch(event.request)
+          .then((response) => {
+            cache.put(event.request, response.clone());
 
+            return response;
+          })
+          .catch(() => caches.match(event.request));
+      })
+    );
+    return;
+  }
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      caches.open(RUNTIME_CACHE).then((response) => {
+        return response || fetch(event.request);
+      });
+    })
+  );
+});
