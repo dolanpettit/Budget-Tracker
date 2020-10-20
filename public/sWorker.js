@@ -66,7 +66,7 @@ self.addEventListener("fetch", (event) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      caches.open(RUNTIME_CACHE).then((response) => {
+      caches.open(CACHE_NAME).then((response) => {
         return response || fetch(event.request);
       });
     })
