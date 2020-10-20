@@ -23,13 +23,13 @@ self.addEventListener("install", (event) => {
 
 // Service Worker Activate
 self.addEventListener("activate", (event) => {
-  const currentCaches = [CACHE_NAME, DATA_CACHE_NAME];
+  const currentCache = [CACHE_NAME, DATA_CACHE_NAME];
 
   event.waitUntil(
     caches
       .keys()
       .then((cacheNames) => {
-        return cacheNames.filter((name) => !currentCaches.includes(name));
+        return cacheNames.filter((name) => !currentCache.includes(name));
       })
       .then((cachesToDelete) => {
         return Promise.all(cachesToDelete.map((name) => caches.delete(name)));
@@ -47,6 +47,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(event.request));
     return;
   }
+
   if (event.request.url.includes("/api/")) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -61,6 +62,7 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
