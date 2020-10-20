@@ -49,7 +49,7 @@ self.addEventListener("fetch", (event) => {
   }
   if (event.request.url.includes("/api/")) {
     event.respondWith(
-      caches.open(RUNTIME_CACHE).then((cache) => {
+      caches.open(CACHE_NAME).then((cache) => {
         return fetch(event.request)
           .then((response) => {
             cache.put(event.request, response.clone());
