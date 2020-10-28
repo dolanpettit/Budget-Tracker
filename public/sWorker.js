@@ -63,6 +63,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Service Worker Response
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
